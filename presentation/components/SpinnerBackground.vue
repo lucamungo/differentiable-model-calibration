@@ -1,34 +1,35 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 
+const props = defineProps({
+  // Position: fraction of canvas (0.5 = centered)
+  centerXFraction: { type: Number, default: 0.5 },
+  centerYFraction: { type: Number, default: 0.5 },
+  // Size: multiplier for spinner radius (1.0 = fit to canvas)
+  scale: { type: Number, default: 1.5 },
+  nRings: { type: Number, default: 50 },
+  lobes: { type: Number, default: 6 },
+  innerR: { type: Number, default: 0.15 },
+  outerR: { type: Number, default: 1 },
+  dotSize: { type: Number, default: 2 },
+  fixedDist: { type: Number, default: 0.02 },
+  minPoints: { type: Number, default: 80 },
+  dt: { type: Number, default: 0.03 },
+  omegaInner: { type: Number, default: 0.15 },
+  omegaOuter: { type: Number, default: 0.05 },
+  shapeAmplitude: { type: Number, default: 0.03 },
+  backgroundFade: { type: Number, default: 1 },
+  hueStart: { type: Number, default: 212 },
+  hueEnd: { type: Number, default: 212 },
+  saturation: { type: Number, default: 96 },
+  lightness: { type: Number, default: 78 },
+  alpha: { type: Number, default: 0.85 }
+});
+
 const canvas = ref(null);
 let animationId = null;
 
-const settings = {
-  // Position: fraction of canvas (0.5 = centered)
-  centerXFraction: 0.5,
-  centerYFraction: 0.5,
-  // Size: multiplier for spinner radius (1.0 = fit to canvas)
-  scale: 1.5,
-
-  nRings: 50,
-  lobes: 6,
-  innerR: 0.15,
-  outerR: 1,
-  dotSize: 2,
-  fixedDist: 0.02,
-  minPoints: 80,
-  dt: 0.03,
-  omegaInner: 0.15,
-  omegaOuter: 0.05,
-  shapeAmplitude: 0.03,
-  backgroundFade: 1,
-  hueStart: 212,
-  hueEnd: 212,
-  saturation: 96,
-  lightness: 78,
-  alpha: 0.85
-};
+const settings = props;
 
 const rings = [];
 let ctx;
