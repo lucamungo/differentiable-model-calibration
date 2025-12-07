@@ -1,0 +1,30 @@
+[project]
+name = "differentiable-physics"
+version = "0.1.0"
+description = "Introduction to differentiable physics with JAX"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "jax",
+    "jaxlib",
+    "numpy",
+    "matplotlib",
+    "optax",
+    "flax",
+    "numpyro",
+    "tqdm>",
+    "plotly",
+    "notebook",
+    "ipykernel"
+]
+
+[project.optional-dependencies]
+# Optional visualization package used in notebooks
+# Install with: pip install -e ".[viz]"
+viz = [
+    "macrocosm-visual",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
