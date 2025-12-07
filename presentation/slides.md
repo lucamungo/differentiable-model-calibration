@@ -21,19 +21,79 @@ Backpropagating Through Dynamical Systems with JAX & NumPyro
 
 </div>
 
-
-
 ---
 
-# What You'll Learn Today
+# Introduction
 
-<div grid="~ cols-3 gap-8" items-start>
+<div grid="~ cols-2 gap-10" items-start>
 
-<IconCard icon="i-carbon:pedestrian-family" title="1. Concept" subtitle="Dynamics ↔ Neural nets" variant="feature" color="blue"/>
+<ContentCard color="blue" icon="i-carbon:user-avatar" title="Luca Mungo">
 
-<IconCard icon="i-carbon:gradient" title="2. Practice" subtitle="JAX autodiff on real ODEs" variant="feature" color="teal"/>
+- **Researcher** at Macrocosm
+- Trained as a **Physicist** (Complex Systems)
+- **PhD** at Oxford — Network Theory in Economics
+- Current focus: **Agent-Based Models** and their **Calibration**
 
-<IconCard icon="i-carbon:chart-error-bar" title="3. Bayesian" subtitle="Uncertainty via VI + NumPyro" variant="feature" color="orange"/>
+</ContentCard>
+
+<ContentCard color="teal">
+
+<img src="/MACROCOSM_NAME_BLCK.png" class="h-6 mb-4" />
+
+Novel economic models leveraging advancements in **data** and **computing**.
+
+<div class="mt-4 italic text-center opacity-80">
+"A better economics for a better world"
+</div>
+
+</ContentCard>
+
+</div>
+
+<div class="mt-8 flex items-center justify-center gap-2 text-base opacity-60">
+<div class="i-carbon:link text-blue-500"></div>
+<a href="https://lmungo.xyz" class="text-blue-500 hover:underline">lmungo.xyz</a>
+</div>
+---
+
+# Outline
+
+<SpirographBackground />
+
+<div class="flex flex-col gap-3 mt-6">
+
+<div class="px-4 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
+<span class="font-bold mr-2">1.</span> Dynamical Systems, Neural Networks, and Differentiable Programming
+</div>
+
+<div class="px-4 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
+<span class="font-bold mr-2">2.</span> JAX
+</div>
+
+<div class="px-4 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
+<span class="font-bold mr-2">3.</span> Live Coding I
+</div>
+
+<div class="px-4 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-900">
+<span class="font-bold mr-2">4.</span> Uncertainty, Variational Inference, NumPyro
+</div>
+
+<div class="px-4 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-900">
+<span class="font-bold mr-2">5.</span> Live Coding II
+</div>
+
+</div>
+
+---
+layout: center
+class: text-center
+---
+
+<LorenzBackground />
+
+<div class="inline-block bg-white/40 backdrop-blur-sm border border-black/10 rounded-lg px-8 py-6">
+
+# Part I: Dynamical Systems, Neural Networks, and Differentiable Programming
 
 </div>
 
@@ -200,6 +260,15 @@ $$x_0 \xrightarrow{\Phi} x_1 \xrightarrow{\Phi} x_2 \xrightarrow{\Phi} \cdots \x
 </div>
 
 ---
+layout: center
+class: text-center
+---
+
+<SpinnerBackground />
+
+# Part II: JAX
+
+---
 
 # Introducing JAX
 
@@ -292,53 +361,6 @@ next_states = batch_step(current_states)
 </div>
 
 </ContentCard>
-
-</div>
-
----
-
-# Introducing JAX
-
-<div grid="~ cols-3 gap-6" items-start>
-
-<ContentCard color="blue" icon="i-carbon:gradient" title="grad()">
-
-Get **exact gradients** of any function — no finite differences needed.
-
-```python
-grad(loss)(theta)
-# returns ∇loss(θ)
-```
-
-</ContentCard>
-
-<ContentCard color="teal" icon="i-carbon:flash" title="jit()">
-
-**Compile** your function to optimized machine code (via XLA).
-
-```python
-fast_fn = jit(slow_fn)
-# 10-100x speedup
-```
-
-</ContentCard>
-
-<ContentCard color="orange" icon="i-carbon:replicate" title="vmap()">
-
-**Vectorize** over a batch dimension — no manual loops.
-
-```python
-vmap(single_example)
-# now works on batches
-```
-
-</ContentCard>
-
-</div>
-
-<div class="mt-8 text-center text-lg">
-
-These transforms **compose**: `jit(vmap(grad(loss)))` compiles a batched gradient computation.
 
 </div>
 
@@ -469,11 +491,11 @@ layout: center
 class: text-center
 ---
 
-<SpinnerBackground />
+<WireframeShapesBackground />
 
 <div class="inline-block bg-black/5 backdrop-blur-[1px] border border-black/10 rounded-lg px-8 py-6">
 
-# Part II: Live Coding Block
+# Part III: Live Coding Block
 ## Gradient Descent on Lotka–Volterra
 
 </div>
@@ -500,7 +522,7 @@ class: text-center
 
 <div class="inline-block bg-white/40 backdrop-blur-md border border-black/10 rounded-lg px-8 py-6">
 
-<h1 class="!text-4xl !mb-2">Part III: From Deterministic to Probabilistic</h1>
+<h1 class="!text-4xl !mb-2">Part IV: From Deterministic to Probabilistic</h1>
 <h2 class="!text-xl !font-normal !opacity-70">Introducing Uncertainty + Variational Inference</h2>
 
 </div>
@@ -581,7 +603,7 @@ $p(\theta)$ — Our beliefs before seeing data
 
 ---
 
-# Variational Inference — Core Idea
+# Variational Inference
 ##
 
 Instead of computing the posterior exactly, assume it comes from a family $\mathcal{Q}$ of approximate densities:
@@ -795,30 +817,28 @@ class: text-center
 ---
 
 <!-- <BouncingBallsBackground :ballCount="80" :ballRadius="10"/> -->
-<WireframeShapesBackground />
+  <MokaPotBackground :pots="[
+    { posX: 0.5, posY: 0.5, scale: 200, rotationSpeedZ: 0.01, rotationSpeedY: 0.03, initialAngleY: 0 }
+  ]" />
 
 <div class="inline-block bg-white/40 backdrop-blur-sm border border-black/10 rounded-lg px-8 py-6">
 
-# Part IV: Live Coding Block
+# Part V: Live Coding Block
 ## Variational Inference on Lotka-Volterra
 
 </div>
 
 ---
 
-# Where This Applies
+# Variational Inference on Lotka-Volterra
 
-<div class="text-center mb-6 text-lg opacity-80">Differentiable programming is everywhere</div>
-
-<div grid="~ cols-3 gap-6">
-
-<IconCard variant="feature" icon="i-carbon:ai-results" title="Neural ODEs" color="blue" />
-<IconCard variant="feature" icon="i-carbon:function" title="PINNs" color="blue" />
-<IconCard variant="feature" icon="i-carbon:earth-filled" title="Climate Models" color="teal" />
-<IconCard variant="feature" icon="i-carbon:bot" title="Robotics & Control" color="teal" />
-<IconCard variant="feature" icon="i-carbon:chemistry" title="Materials Science" subtitle="JAX-MD" color="orange" />
-<IconCard variant="feature" icon="i-carbon:chart-network" title="Economics & ABMs" color="blue" />
-
+<div class="h-[420px] w-full overflow-hidden bg-white rounded-xl border border-black/10">
+<iframe
+  src="/figures/numpyro_svi_animation.html"
+  class="w-full h-full"
+  style="border: none; outline: none; background: white;"
+  frameborder="0"
+></iframe>
 </div>
 
 ---
@@ -827,4 +847,4 @@ layout: center
 
 <GOLMcmBackground seedText="Thank you!" />
 
-# 
+#
