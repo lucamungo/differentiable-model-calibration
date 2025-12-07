@@ -16,10 +16,16 @@ const props = defineProps({
 const isActive = useIsSlideActive();
 const reloadKey = ref(0);
 
-// Append a cache-busting query param to force reload
+// Get base URL (handles GitHub Pages subdirectory deployment)
+const base = import.meta.env.BASE_URL;
+
+// Build the full src with base path and cache-busting param
 const iframeSrc = computed(() => {
-    const separator = props.src.includes("?") ? "&" : "?";
-    return `${props.src}${separator}_reload=${reloadKey.value}`;
+    // Remove leading slash from src if base already ends with one
+    const srcPath = props.src.startsWith("/") ? props.src.slice(1) : props.src;
+    const fullPath = `${base}${srcPath}`;
+    const separator = fullPath.includes("?") ? "&" : "?";
+    return `${fullPath}${separator}_reload=${reloadKey.value}`;
 });
 
 // Reload iframe whenever slide becomes active
