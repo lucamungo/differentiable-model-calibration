@@ -30,7 +30,7 @@ jobs:
 
       - name: Build slides
         working-directory: ./presentation
-        run: npm run build -- --base /differentiable-physics/
+        run: npm run build -- --base /differentiable-model-calibration/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
