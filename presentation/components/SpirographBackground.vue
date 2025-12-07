@@ -20,20 +20,25 @@ const scale = 10000;
 const settings = {
   lineWidth: 1.5,
   stepsPerFrame: 5,
-  trailLength: 11000,
+  trailLength: 5000,  // Reduced for performance
   backgroundFade: 0.08,
   hueStart: 212,
   hueEnd: 212,
   saturation: 96,
   lightness: 78,
-  maxOpacity: 0.85
+  maxOpacity: 0.85,
+  numBands: 20  // Number of batched draw calls
 };
 
 // Animation state
 let currentStep = 0;
-let segments = [];
 let drawScale = 1;
 let corners = [];
+
+// Use a ring buffer instead of array.shift() to avoid GC pauses
+let segments = null;
+let segmentHead = 0;
+let segmentCount = 0;
 
 function initCanvas() {
   const canvasEl = canvas.value;
@@ -57,7 +62,21 @@ function initCanvas() {
 
 function resetAnimation() {
   currentStep = 0;
-  segments = [];
+  // Pre-allocate ring buffer with fixed size (4 floats per segment: x1, y1, x2, y2)
+  segments = new Float32Array(settings.trailLength * 4);
+  segmentHead = 0;
+  segmentCount = 0;
+}
+
+// Add a segment to the ring buffer
+function addSegment(x1, y1, x2, y2) {
+  const idx = segmentHead * 4;
+  segments[idx] = x1;
+  segments[idx + 1] = y1;
+  segments[idx + 2] = x2;
+  segments[idx + 3] = y2;
+  segmentHead = (segmentHead + 1) % settings.trailLength;
+  if (segmentCount < settings.trailLength) segmentCount++;
 }
 
 function calculatePoint(step, offsetX, offsetY) {
@@ -73,32 +92,18 @@ function calculatePoint(step, offsetX, offsetY) {
 }
 
 function stepSpirograph() {
+  const topLeft = corners[0];
+  const bottomRight = corners[1];
+
   for (let i = 0; i < settings.stepsPerFrame; i++) {
-    const [topLeft, bottomRight] = corners;
     const tlStart = calculatePoint(currentStep, topLeft.offsetX, topLeft.offsetY);
     currentStep++;
     const tlEnd = calculatePoint(currentStep, topLeft.offsetX, topLeft.offsetY);
-
-    segments.push({
-      x1: tlStart.x,
-      y1: tlStart.y,
-      x2: tlEnd.x,
-      y2: tlEnd.y
-    });
+    addSegment(tlStart.x, tlStart.y, tlEnd.x, tlEnd.y);
 
     const brStart = calculatePoint(currentStep - 1, bottomRight.offsetX, bottomRight.offsetY);
     const brEnd = calculatePoint(currentStep, bottomRight.offsetX, bottomRight.offsetY);
-
-    segments.push({
-      x1: brStart.x,
-      y1: brStart.y,
-      x2: brEnd.x,
-      y2: brEnd.y
-    });
-  }
-
-  while (segments.length > settings.trailLength) {
-    segments.shift();
+    addSegment(brStart.x, brStart.y, brEnd.x, brEnd.y);
   }
 }
 
@@ -106,21 +111,37 @@ function draw() {
   ctx.fillStyle = `rgba(251, 252, 255, ${settings.backgroundFade})`;
   ctx.fillRect(0, 0, width, height);
 
+  if (segmentCount < 2) return;
+
   ctx.lineWidth = settings.lineWidth;
   ctx.lineCap = "round";
-  ctx.lineJoin = "round";
 
-  segments.forEach((seg, index) => {
-    const progress = segments.length ? index / segments.length : 0;
-    const hue = settings.hueStart + (settings.hueEnd - settings.hueStart) * progress;
+  const start = segmentCount < settings.trailLength ? 0 : segmentHead;
+  const bandSize = Math.ceil(segmentCount / settings.numBands);
+
+  // Draw segments in batches by opacity band
+  for (let band = 0; band < settings.numBands; band++) {
+    const bandStart = band * bandSize;
+    const bandEnd = Math.min((band + 1) * bandSize, segmentCount);
+
+    if (bandStart >= segmentCount) break;
+
+    // Calculate opacity for this band (middle of band)
+    const midPoint = (bandStart + bandEnd) / 2;
+    const progress = midPoint / segmentCount;
     const opacity = Math.min(progress * settings.maxOpacity, settings.maxOpacity);
-    ctx.strokeStyle = `hsla(${hue}, ${settings.saturation}%, ${settings.lightness}%, ${opacity})`;
 
+    ctx.strokeStyle = `hsla(${settings.hueStart}, ${settings.saturation}%, ${settings.lightness}%, ${opacity})`;
     ctx.beginPath();
-    ctx.moveTo(seg.x1, seg.y1);
-    ctx.lineTo(seg.x2, seg.y2);
+
+    for (let i = bandStart; i < bandEnd; i++) {
+      const bufferIdx = ((start + i) % settings.trailLength) * 4;
+      ctx.moveTo(segments[bufferIdx], segments[bufferIdx + 1]);
+      ctx.lineTo(segments[bufferIdx + 2], segments[bufferIdx + 3]);
+    }
+
     ctx.stroke();
-  });
+  }
 }
 
 function animate() {
@@ -182,5 +203,6 @@ onUnmounted(() => {
   height: 100%;
   z-index: -10;
   pointer-events: none;
+  will-change: contents;
 }
 </style>

@@ -9,18 +9,6 @@ const canvas = ref(null);
 let animationId = null;
 let rngState = 0;
 
-// Hash a string to a number
-function hashString(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash);
-}
-
-// Simple seeded PRNG (mulberry32)
 function seededRandom() {
   rngState += 0x6D2B79F5;
   let t = rngState;
@@ -35,8 +23,6 @@ function getRandom() {
 
 const settings = {
   cellSize: 4,
-  aliveColor: "rgba(147, 197, 253, 0.9)",
-  fadeColor: "rgba(251, 252, 255, 1)",
   density: 0.45,
   stepsPerFrame: 2,
   maxStableSteps: 2,
@@ -44,8 +30,11 @@ const settings = {
   reseedInterval: 2400
 };
 
+// Colors (RGB values)
+const aliveR = 147, aliveG = 197, aliveB = 253;
+const bgR = 251, bgG = 252, bgB = 255;
+
 let ctx;
-// Use fixed dimensions matching Slidev's internal slide size
 const width = 980;
 const height = 552;
 let cols = 0;
@@ -57,20 +46,36 @@ let next;
 let stableSteps = 0;
 let framesSinceReset = 0;
 
+// Offscreen canvas at 1:1 cell-to-pixel ratio
+let offscreen = null;
+let offCtx = null;
+let offImageData = null;
+let offPixels = null;
+
 function initCanvas() {
   const canvasEl = canvas.value;
   if (!canvasEl) return;
 
-  // Use fixed canvas buffer size, let CSS handle display scaling
-  const pixelRatio = 2; // Use 2x for crisp rendering
+  const pixelRatio = 2;
   canvasEl.width = width * pixelRatio;
   canvasEl.height = height * pixelRatio;
 
   ctx = canvasEl.getContext("2d");
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
+  // Disable smoothing for crisp pixel scaling
+  ctx.imageSmoothingEnabled = false;
+
   cols = Math.ceil(width / settings.cellSize);
   rows = Math.ceil(height / settings.cellSize);
+
+  // Create tiny offscreen canvas (1 pixel per cell)
+  offscreen = document.createElement("canvas");
+  offscreen.width = cols;
+  offscreen.height = rows;
+  offCtx = offscreen.getContext("2d");
+  offImageData = offCtx.createImageData(cols, rows);
+  offPixels = new Uint32Array(offImageData.data.buffer);
 }
 
 function initializeGrid() {
@@ -82,8 +87,9 @@ function initializeGrid() {
   stableSteps = 0;
   framesSinceReset = 0;
 
-  // Reset RNG state with seed if provided
-  rngState = props.seed !== null ? props.seed : Math.floor(Math.random() * 0xFFFFFFFF);
+  rngState = props.seedText !== null
+    ? Math.abs(props.seedText.split('').reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0), 0))
+    : Math.floor(Math.random() * 0xFFFFFFFF);
 
   for (let i = 0; i < size; i++) {
     current[i] = getRandom() < settings.density ? 1 : 0;
@@ -103,32 +109,30 @@ function stepLife() {
   for (let y = 0; y < rows; y++) {
     const up = (y - 1 + rows) % rows;
     const down = (y + 1) % rows;
+    const yOffset = y * cols;
+    const upOffset = up * cols;
+    const downOffset = down * cols;
 
     for (let x = 0; x < cols; x++) {
       const left = (x - 1 + cols) % cols;
       const right = (x + 1) % cols;
 
-      const idx = y * cols + x;
+      const neighbors =
+        current[upOffset + left] +
+        current[upOffset + x] +
+        current[upOffset + right] +
+        current[yOffset + left] +
+        current[yOffset + right] +
+        current[downOffset + left] +
+        current[downOffset + x] +
+        current[downOffset + right];
 
-      let neighbors = 0;
-      neighbors += current[up * cols + left];
-      neighbors += current[up * cols + x];
-      neighbors += current[up * cols + right];
-      neighbors += current[y * cols + left];
-      neighbors += current[y * cols + right];
-      neighbors += current[down * cols + left];
-      neighbors += current[down * cols + x];
-      neighbors += current[down * cols + right];
-
+      const idx = yOffset + x;
       const alive = current[idx];
       const nextAlive = neighbors === 3 || (alive && neighbors === 2) ? 1 : 0;
       next[idx] = nextAlive;
-      if (nextAlive !== alive) {
-        changed = true;
-      }
-      if (nextAlive) {
-        liveCount++;
-      }
+      if (nextAlive !== alive) changed = true;
+      if (nextAlive) liveCount++;
     }
   }
 
@@ -136,20 +140,21 @@ function stepLife() {
   return { changed, liveCount };
 }
 
+// Pre-compute RGBA colors as 32-bit integers (ABGR format for little-endian)
+const bgColor = (255 << 24) | (bgB << 16) | (bgG << 8) | bgR;
+const aliveColor = (230 << 24) | (aliveB << 16) | (aliveG << 8) | aliveR;
+
 function draw() {
-  ctx.fillStyle = settings.fadeColor;
-  ctx.fillRect(0, 0, width, height);
+  const size = cols * rows;
 
-  ctx.fillStyle = settings.aliveColor;
-  const size = settings.cellSize;
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const idx = y * cols + x;
-      if (!current[idx]) continue;
-      ctx.fillRect(x * size, y * size, size, size);
-    }
+  // Write directly to Uint32Array (4x faster than byte-by-byte)
+  for (let i = 0; i < size; i++) {
+    offPixels[i] = current[i] ? aliveColor : bgColor;
   }
+
+  // Put the tiny image and scale it up
+  offCtx.putImageData(offImageData, 0, 0);
+  ctx.drawImage(offscreen, 0, 0, width, height);
 }
 
 function animate() {
@@ -186,7 +191,6 @@ onMounted(() => {
 });
 
 onActivated(() => {
-  // Restart the animation when navigating back to the slide
   initializeGrid();
 });
 
@@ -210,5 +214,7 @@ onUnmounted(() => {
   height: 100%;
   z-index: -10;
   pointer-events: none;
+  will-change: contents;
+  image-rendering: pixelated;
 }
 </style>

@@ -182,5 +182,6 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
   z-index: -10;
   pointer-events: none;
+  will-change: contents;
 }
 </style>

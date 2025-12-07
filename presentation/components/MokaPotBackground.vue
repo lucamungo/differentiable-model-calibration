@@ -1,20 +1,22 @@
 <script setup>
 import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from "vue";
 
+// Each pot in the pots array can have:
+// - posX, posY: position as fraction of canvas (0-1)
+// - scale: size of the pot
+// - rotationSpeedX, rotationSpeedY, rotationSpeedZ: angular velocities for each axis
+// - initialAngleX, initialAngleY, initialAngleZ: starting angles
 const props = defineProps({
-  // Array of pot configurations
-  // Each pot can have: posX, posY, scale, rotationSpeedX, rotationSpeedY, rotationSpeedZ, initialAngleX, initialAngleY, initialAngleZ
   pots: {
     type: Array,
-    default: () => [{ posX: 0.75, posY: 0.5, scale: 200, rotationSpeedY: 0.03 }]
+    default: () => [{ posX: 0.75, posY: 0.5, scale: 200, rotationSpeedX: 0, rotationSpeedY: 0.03, rotationSpeedZ: 0 }]
   },
   lineWidth: { type: Number, default: 1.2 },
   hue: { type: Number, default: 212 },
   saturation: { type: Number, default: 90 },
   lightness: { type: Number, default: 60 },
   alpha: { type: Number, default: 0.8 },
-  focalLength: { type: Number, default: 600 },
-  tiltX: { type: Number, default: 0.3 }
+  focalLength: { type: Number, default: 600 }
 });
 
 const canvas = ref(null);
@@ -24,165 +26,127 @@ let ctx = null;
 const width = 980;
 const height = 552;
 
-// Each pot gets its own angle state
-let potStates = [];
+// Pre-computed geometry per pot
+let potData = [];
 
-// Generate octagon vertices at a given height and radius
-function createOctagonRing(y, radius) {
-  const points = [];
-  for (let i = 0; i < 8; i++) {
-    const angle = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    points.push([
-      Math.cos(angle) * radius,
-      y,
-      Math.sin(angle) * radius
-    ]);
-  }
-  return points;
-}
-
-function getMokaVertices(s) {
-  const vertices = [];
-
-  // Bottom chamber (boiler) - simple trapezoid, wider at bottom
-  // Level 0: Base bottom (widest)
-  vertices.push(...createOctagonRing(-s * 1.2, s * 0.7));   // 0-7
-
-  // Level 1: Base top (narrower, at waist)
-  vertices.push(...createOctagonRing(-s * 0.2, s * 0.45));   // 8-15
-
-  // Waist
-  // Level 2: Waist
-  vertices.push(...createOctagonRing(-s * 0.1, s * 0.45));  // 16-23
-
-  // Top chamber (collector) - flares out from waist
-  // Level 3: Top chamber bottom
-  vertices.push(...createOctagonRing(s * 0.0, s * 0.45));   // 24-31
-
-  // Level 4: Top chamber top (widest)
-  vertices.push(...createOctagonRing(s * 1.0, s * 0.65));   // 32-39
-
-  // Lid
-  // Level 5: Lid rim
-  vertices.push(...createOctagonRing(s * 1.05, s * 0.6));   // 40-47
-
-  // Level 6: Lid top
-  vertices.push(...createOctagonRing(s * 1.15, s * 0.05));  // 48-55
-
-  // Knob
-  // Level 7: Knob base
-  vertices.push(...createOctagonRing(s * 1.25, s * 0.06));  // 56-63
-
-  // Level 8: Knob top
-  vertices.push(...createOctagonRing(s * 1.43, s * 0.09));  // 64-71
-
-  // Knob apex
-  vertices.push([0, s * 1.5, 0]);  // 72
-
-  // Handle - simple curve (right side)
-  vertices.push([s * 0.5, -s * 0.1, 0]);      // 73: attach lower
-  vertices.push([s * 0.85, s * 0.4, 0]);      // 74: curve out
-  vertices.push([s * 0.75, s * 0.9, 0]);      // 75: attach upper
-
-  // Handle inner
-  vertices.push([s * 0.45, s * 0.0, 0]);      // 76: inner lower
-  vertices.push([s * 0.65, s * 0.4, 0]);      // 77: inner mid
-  vertices.push([s * 0.6, s * 0.8, 0]);       // 78: inner upper
-
-  // Spout (left side)
-  // Beak top point - sticks out
-  vertices.push([-s * 0.9, s * 1.0, 0]);  // 79: beak top point
-
-  // Beak bottom point - on chamber surface at half height
-  // At y = 0.5, radius interpolated between 0.45 and 0.65 = 0.55
-  vertices.push([-s * 0.55, s * 0.5, 0]); // 80: beak bottom point
-
-  return vertices;
-}
-
+// Generate edges once (same for all pots)
 function getMokaEdges() {
   const edges = [];
-
-  // Helper: connect octagon ring edges
   function addRingEdges(startIdx) {
     for (let i = 0; i < 8; i++) {
       edges.push([startIdx + i, startIdx + ((i + 1) % 8)]);
     }
   }
-
-  // Helper: connect two octagon levels
   function addVerticalEdges(level1Start, level2Start) {
     for (let i = 0; i < 8; i++) {
       edges.push([level1Start + i, level2Start + i]);
     }
   }
 
-  // Bottom chamber - levels 0-1
-  addRingEdges(0);    // Level 0: Base bottom
-  addRingEdges(8);    // Level 1: Base top
-  addVerticalEdges(0, 8);
-
-  // Waist - level 2
-  addRingEdges(16);   // Level 2: Waist
-  addVerticalEdges(8, 16);
-
-  // Top chamber - levels 3-4
-  addRingEdges(24);   // Level 3: Top chamber bottom
-  addRingEdges(32);   // Level 4: Top chamber top
-  addVerticalEdges(16, 24);
-  addVerticalEdges(24, 32);
-
-  // Lid - levels 5-6
-  addRingEdges(40);   // Level 5: Lid rim
-  addRingEdges(48);   // Level 6: Lid top
-  addVerticalEdges(32, 40);
-  addVerticalEdges(40, 48);
-
-  // Knob - levels 7-8
-  addRingEdges(56);   // Level 7: Knob base
-  addRingEdges(64);   // Level 8: Knob top
-  addVerticalEdges(48, 56);
-  addVerticalEdges(56, 64);
-
-  // Knob apex connections
-  for (let i = 0; i < 8; i++) {
-    edges.push([64 + i, 72]);
-  }
-
-  // Handle outer (73-75)
-  edges.push([73, 74]);
-  edges.push([74, 75]);
-
-  // Handle inner (76-78)
-  edges.push([76, 77]);
-  edges.push([77, 78]);
-
-  // Handle caps
-  edges.push([73, 76]);
-  edges.push([75, 78]);
-
-  // Connect handle to body (right side: vertex 0 of each ring)
-  edges.push([73, 8]);    // Lower to base top (level 1, i=0)
-  edges.push([76, 16]);   // Inner lower to waist (level 2, i=0)
-  edges.push([75, 32]);   // Upper to top chamber (level 4, i=0)
-  edges.push([78, 32]);   // Inner upper to top chamber
-
-  // Spout - triangle at top of chamber
-  // Beak top point (79) connects to two body vertices on left side of level 4
-  edges.push([79, 35]);   // Beak top to front-left (level 4, i=3)
-  edges.push([79, 36]);   // Beak top to back-left (level 4, i=4)
-
-  // Line from beak top to beak bottom
-  edges.push([79, 80]);   // Beak top to beak bottom
-
-  // Lines from beak bottom to top chamber vertices
-  edges.push([80, 35]);   // Beak bottom to front-left (level 4, i=3)
-  edges.push([80, 36]);   // Beak bottom to back-left (level 4, i=4)
+  addRingEdges(0); addRingEdges(8); addVerticalEdges(0, 8);
+  addRingEdges(16); addVerticalEdges(8, 16);
+  addRingEdges(24); addRingEdges(32); addVerticalEdges(16, 24); addVerticalEdges(24, 32);
+  addRingEdges(40); addRingEdges(48); addVerticalEdges(32, 40); addVerticalEdges(40, 48);
+  addRingEdges(56); addRingEdges(64); addVerticalEdges(48, 56); addVerticalEdges(56, 64);
+  for (let i = 0; i < 8; i++) edges.push([64 + i, 72]);
+  edges.push([73, 74], [74, 75], [76, 77], [77, 78], [73, 76], [75, 78]);
+  edges.push([73, 8], [76, 16], [75, 32], [78, 32]);
+  edges.push([79, 35], [79, 36], [79, 80], [80, 35], [80, 36]);
 
   return edges;
 }
 
 const mokaEdges = getMokaEdges();
+const numVertices = 81; // 72 octagon + 1 apex + 6 handle + 2 spout
+
+function createMokaVertices(s) {
+  const verts = new Float32Array(numVertices * 3);
+  let idx = 0;
+
+  // Helper to add octagon ring
+  function addOctagonRing(y, radius) {
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + Math.PI / 8;
+      verts[idx++] = Math.cos(angle) * radius;
+      verts[idx++] = y;
+      verts[idx++] = Math.sin(angle) * radius;
+    }
+  }
+
+  addOctagonRing(-s * 1.2, s * 0.7);    // 0-7
+  addOctagonRing(-s * 0.2, s * 0.45);   // 8-15
+  addOctagonRing(-s * 0.1, s * 0.45);   // 16-23
+  addOctagonRing(s * 0.0, s * 0.45);    // 24-31
+  addOctagonRing(s * 1.0, s * 0.65);    // 32-39
+  addOctagonRing(s * 1.05, s * 0.6);    // 40-47
+  addOctagonRing(s * 1.15, s * 0.05);   // 48-55
+  addOctagonRing(s * 1.25, s * 0.06);   // 56-63
+  addOctagonRing(s * 1.43, s * 0.09);   // 64-71
+
+  // Knob apex (72)
+  verts[idx++] = 0; verts[idx++] = s * 1.5; verts[idx++] = 0;
+
+  // Handle outer (73-75)
+  verts[idx++] = s * 0.5; verts[idx++] = -s * 0.1; verts[idx++] = 0;
+  verts[idx++] = s * 0.85; verts[idx++] = s * 0.4; verts[idx++] = 0;
+  verts[idx++] = s * 0.75; verts[idx++] = s * 0.9; verts[idx++] = 0;
+
+  // Handle inner (76-78)
+  verts[idx++] = s * 0.45; verts[idx++] = s * 0.0; verts[idx++] = 0;
+  verts[idx++] = s * 0.65; verts[idx++] = s * 0.4; verts[idx++] = 0;
+  verts[idx++] = s * 0.6; verts[idx++] = s * 0.8; verts[idx++] = 0;
+
+  // Spout (79-80)
+  verts[idx++] = -s * 0.9; verts[idx++] = s * 1.0; verts[idx++] = 0;
+  verts[idx++] = -s * 0.55; verts[idx++] = s * 0.5; verts[idx++] = 0;
+
+  return verts;
+}
+
+function initGeometry() {
+  potData = props.pots.map(pot => ({
+    vertices: createMokaVertices(pot.scale || 200),
+    projected: new Float32Array(numVertices * 2),
+    angleX: pot.initialAngleX || 0,
+    angleY: pot.initialAngleY || 0,
+    angleZ: pot.initialAngleZ || 0,
+    centerX: width * (pot.posX || 0.5),
+    centerY: height * (pot.posY || 0.5),
+    rotationSpeedX: pot.rotationSpeedX || 0,
+    rotationSpeedY: pot.rotationSpeedY || 0.03,
+    rotationSpeedZ: pot.rotationSpeedZ || 0
+  }));
+}
+
+function transformAndProject(verts, proj, centerX, centerY, ax, ay, az) {
+  const cosX = Math.cos(ax), sinX = Math.sin(ax);
+  const cosY = Math.cos(ay), sinY = Math.sin(ay);
+  const cosZ = Math.cos(az), sinZ = Math.sin(az);
+  const focal = props.focalLength;
+
+  for (let i = 0; i < numVertices; i++) {
+    let x = verts[i * 3];
+    let y = verts[i * 3 + 1];
+    let z = verts[i * 3 + 2];
+
+    // Rotate X
+    let y1 = y * cosX - z * sinX;
+    let z1 = y * sinX + z * cosX;
+
+    // Rotate Y
+    let x2 = x * cosY + z1 * sinY;
+    let z2 = -x * sinY + z1 * cosY;
+
+    // Rotate Z
+    let x3 = x2 * cosZ - y1 * sinZ;
+    let y3 = x2 * sinZ + y1 * cosZ;
+
+    // Project (flip Y so up is positive)
+    const scale = focal / (focal + z2);
+    proj[i * 2] = centerX + x3 * scale;
+    proj[i * 2 + 1] = centerY - y3 * scale;
+  }
+}
 
 function initCanvas() {
   const canvasEl = canvas.value;
@@ -197,101 +161,44 @@ function initCanvas() {
 }
 
 function resetAnimation() {
-  potStates = props.pots.map(pot => ({
-    angleX: props.tiltX,
-    angleY: pot.initialAngleY || 0,
-    angleZ: 0
-  }));
-}
-
-function rotateX(point, angle) {
-  const [x, y, z] = point;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  return [x, y * cos - z * sin, y * sin + z * cos];
-}
-
-function rotateY(point, angle) {
-  const [x, y, z] = point;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  return [x * cos + z * sin, y, -x * sin + z * cos];
-}
-
-function rotateZ(point, angle) {
-  const [x, y, z] = point;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  return [x * cos - y * sin, x * sin + y * cos, z];
-}
-
-function project(point, centerX, centerY) {
-  const [x, y, z] = point;
-  const focalLength = props.focalLength;
-  const scale = focalLength / (focalLength + z);
-  return {
-    x: centerX + x * scale,
-    y: centerY - y * scale,  // Flip Y so up is positive
-    z: z
-  };
-}
-
-function transformVertices(vertices, centerX, centerY, ax, ay, az) {
-  return vertices.map(v => {
-    let point = v;
-    point = rotateX(point, ax);
-    point = rotateY(point, ay);
-    point = rotateZ(point, az);
-    return project(point, centerX, centerY);
+  potData.forEach((pot, i) => {
+    const config = props.pots[i];
+    pot.angleX = config.initialAngleX || 0;
+    pot.angleY = config.initialAngleY || 0;
+    pot.angleZ = config.initialAngleZ || 0;
   });
-}
-
-function drawShape(vertices, edges, centerX, centerY, ax, ay, az) {
-  const projected = transformVertices(vertices, centerX, centerY, ax, ay, az);
-
-  ctx.strokeStyle = `hsla(${props.hue}, ${props.saturation}%, ${props.lightness}%, ${props.alpha})`;
-  ctx.lineWidth = props.lineWidth;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-
-  for (const [i, j] of edges) {
-    const p1 = projected[i];
-    const p2 = projected[j];
-    if (!p1 || !p2) continue;
-
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-  }
 }
 
 function draw() {
   ctx.fillStyle = "rgba(251, 252, 255, 1)";
   ctx.fillRect(0, 0, width, height);
 
-  props.pots.forEach((pot, index) => {
-    const state = potStates[index];
-    if (!state) return;
+  ctx.strokeStyle = `hsla(${props.hue}, ${props.saturation}%, ${props.lightness}%, ${props.alpha})`;
+  ctx.lineWidth = props.lineWidth;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
-    const scale = pot.scale || 200;
-    const mokaVertices = getMokaVertices(scale);
+  // Draw all pots in a single batched path
+  ctx.beginPath();
 
-    const centerX = width * (pot.posX || 0.5);
-    const centerY = height * (pot.posY || 0.5);
+  for (const pot of potData) {
+    transformAndProject(pot.vertices, pot.projected, pot.centerX, pot.centerY, pot.angleX, pot.angleY, pot.angleZ);
 
-    drawShape(mokaVertices, mokaEdges, centerX, centerY, state.angleX, state.angleY, state.angleZ);
-  });
+    for (const [i, j] of mokaEdges) {
+      ctx.moveTo(pot.projected[i * 2], pot.projected[i * 2 + 1]);
+      ctx.lineTo(pot.projected[j * 2], pot.projected[j * 2 + 1]);
+    }
+  }
+
+  ctx.stroke();
 }
 
 function animate() {
-  props.pots.forEach((pot, index) => {
-    const state = potStates[index];
-    if (!state) return;
-
-    const speed = pot.rotationSpeed || 0.03;
-    state.angleY += speed;
-  });
+  for (const pot of potData) {
+    pot.angleX += pot.rotationSpeedX;
+    pot.angleY += pot.rotationSpeedY;
+    pot.angleZ += pot.rotationSpeedZ;
+  }
 
   draw();
   animationId = requestAnimationFrame(animate);
@@ -300,19 +207,15 @@ function animate() {
 onMounted(() => {
   if (!canvas.value) return;
   initCanvas();
-  resetAnimation();
+  initGeometry();
   draw();
   animate();
 });
 
 onActivated(() => {
   resetAnimation();
-  if (ctx) {
-    draw();
-  }
-  if (!animationId) {
-    animate();
-  }
+  if (ctx) draw();
+  if (!animationId) animate();
 });
 
 onDeactivated(() => {
@@ -343,5 +246,6 @@ onUnmounted(() => {
   height: 100%;
   z-index: -10;
   pointer-events: none;
+  will-change: contents;
 }
 </style>

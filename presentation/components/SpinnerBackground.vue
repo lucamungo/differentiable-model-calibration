@@ -171,5 +171,6 @@ onUnmounted(() => {
   height: 100%;
   z-index: -10;
   pointer-events: none;
+  will-change: contents;
 }
 </style>
