@@ -9,7 +9,7 @@ fonts:
   serif: Newsreader
 ---
 
-<LorenzBackground />
+<RestartOnEnter><LorenzBackground /></RestartOnEnter>
 
 <div class="inline-block bg-white/10 backdrop-blur-sm border border-black/10 rounded-lg p-6">
 
@@ -58,7 +58,7 @@ Novel economic models leveraging advancements in **data** and **computing**.
 
 # Outline
 
-<SpirographBackground />
+<RestartOnEnter><SpirographBackground /></RestartOnEnter>
 
 <div class="flex flex-col gap-3 mt-6">
 
@@ -89,7 +89,7 @@ layout: center
 class: text-center
 ---
 
-<LorenzBackground />
+<RestartOnEnter><LorenzBackground /></RestartOnEnter>
 
 <div class="inline-block bg-white/40 backdrop-blur-sm border border-black/10 rounded-lg px-8 py-6">
 
@@ -505,12 +505,7 @@ class: text-center
 # Gradient Descent on Lotka-Volterra
 
 <div class="h-[400px] w-full overflow-hidden bg-white rounded-xl border border-black/10">
-<iframe
-  src="/figures/trajectory_animation.html"
-  class="w-full h-full"
-  style="border: none; outline: none; background: white;"
-  frameborder="0"
-></iframe>
+<AutoReloadIframe src="/figures/trajectory_animation.html" class="w-full h-full" />
 </div>
 
 ---
@@ -518,7 +513,7 @@ layout: center
 class: text-center
 ---
 
-<GameOfLifeBackground />
+<RestartOnEnter><GameOfLifeBackground /></RestartOnEnter>
 
 <div class="inline-block bg-white/40 backdrop-blur-md border border-black/10 rounded-lg px-8 py-6">
 
@@ -833,18 +828,13 @@ class: text-center
 # Variational Inference on Lotka-Volterra
 
 <div class="h-[420px] w-full overflow-hidden bg-white rounded-xl border border-black/10">
-<iframe
-  src="/figures/numpyro_svi_animation.html"
-  class="w-full h-full"
-  style="border: none; outline: none; background: white;"
-  frameborder="0"
-></iframe>
+<AutoReloadIframe src="/figures/numpyro_svi_animation.html" class="w-full h-full" />
 </div>
 
 ---
 layout: center
 ---
 
-<GOLMcmBackground seedText="Thank you!" />
+<RestartOnEnter><GOLMcmBackground seedText="Thank you!" /></RestartOnEnter>
 
 #
