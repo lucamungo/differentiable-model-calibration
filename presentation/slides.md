@@ -108,7 +108,7 @@ class: text-center
 
 <div>
 
-<ContentCard color="blue" icon="i-carbon:machine-learning-model" title="Universal Function Approximator">
+<ContentCard color="blue" icon="i-carbon:machine-learning-model" title="A Parametrized Differentiable Function">
 
 A neural network is a flexible, parameterized function $y = f(x; \theta)$ composed of layers.
 
@@ -148,7 +148,7 @@ Maps <strong>inputs</strong> to <strong>outputs</strong> via transformations.
 
 <div>
 
-<ContentCard color="teal" icon="i-carbon:time" title="State Evolution">
+<ContentCard color="teal" icon="i-carbon:time" title="Parametrised Time-Evolution">
 
 A dynamical system describes how a state $x(t)$ evolves over time based on a rule.
 
