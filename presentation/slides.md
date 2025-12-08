@@ -40,10 +40,13 @@ Backpropagating Through Dynamical Systems with JAX & NumPyro
 
 <img src="/MACROCOSM_NAME_BLCK.png" class="h-6 mb-4" />
 
-Novel economic models leveraging advancements in **data** and **computing**.
+Novel economic models leveraging advancements in **data** and **computing**. The company's motto is "A better economics for a better world".
 
-<div class="mt-4 italic text-center opacity-80">
-"A better economics for a better world"
+<div class="mt-5 flex items-center gap-5">
+<img src="/making-sense-of-chaos.jpg" class="h-32 rounded shadow" />
+<div class="text-sm opacity-80">
+... and this book gives an overview of the company's work.
+</div>
 </div>
 
 </ContentCard>
@@ -813,7 +816,7 @@ class: text-center
 
 <!-- <BouncingBallsBackground :ballCount="80" :ballRadius="10"/> -->
   <MokaPotBackground :pots="[
-    { posX: 0.5, posY: 0.5, scale: 200, rotationSpeedZ: 0.01, rotationSpeedY: 0.03, initialAngleY: 0 }
+    { posX: 0.5, posY: 0.5, scale: 200, rotationSpeedZ: 0.01, rotationSpeedY: 0.02, initialAngleY: 0, lidAnimationSpeed: 0.02 }
   ]" />
 
 <div class="inline-block bg-white/40 backdrop-blur-sm border border-black/10 rounded-lg px-8 py-6">
