@@ -104,7 +104,9 @@ class: text-center
 
 # What is a Neural Network?
 
-<div grid="~ cols-2 gap-12" items-center>
+<div grid="~ cols-2 gap-8" items-center>
+
+<div>
 
 <ContentCard color="blue" icon="i-carbon:machine-learning-model" title="Universal Function Approximator">
 
@@ -116,16 +118,24 @@ A neural network is a flexible, parameterized function $y = f(x; \theta)$ compos
 
 </ContentCard>
 
-<div class="text-center">
+<div class="mt-4 text-center">
 
-$$
-y = f_L(\dots f_2(f_1(x)))
-$$
+<div class="inline-block bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
 
-<div class="mt-8 opacity-80 text-lg">
-It maps <strong>inputs</strong> to <strong>outputs</strong> via a sequence of transformations.
+$y = f_L(\dots f_2(f_1(x)))$
+
+<div class="mt-2 opacity-70 text-sm">
+Maps <strong>inputs</strong> to <strong>outputs</strong> via transformations.
 </div>
 
+</div>
+
+</div>
+
+</div>
+
+<div class="flex justify-center">
+<NeuralNetworkDiagram :inputNodes="4" :hiddenLayers="[5, 5]" :outputNodes="4" :nodeRadius="16" :layerSpacing="85" :nodeSpacing="42" />
 </div>
 
 </div>
@@ -134,7 +144,9 @@ It maps <strong>inputs</strong> to <strong>outputs</strong> via a sequence of tr
 
 # What is a Dynamical System?
 
-<div grid="~ cols-2 gap-12" items-center>
+<div grid="~ cols-2 gap-8" items-center>
+
+<div>
 
 <ContentCard color="teal" icon="i-carbon:time" title="State Evolution">
 
@@ -146,16 +158,24 @@ A dynamical system describes how a state $x(t)$ evolves over time based on a rul
 
 </ContentCard>
 
-<div class="text-center">
+<div class="mt-4 text-center">
 
-$$
-x(t) \xrightarrow{\text{time step}} x(t+\Delta t)
-$$
+<div class="inline-block bg-teal-50 border border-teal-200 rounded-lg px-4 py-3">
 
-<div class="mt-8 opacity-80 text-lg">
-It maps a <strong>state</strong> to a <strong>future state</strong> via a time-evolution rule.
+$x_N = \Phi(x_{N-1}, \theta) = \Phi^N(x_0, \theta)$
+
+<div class="mt-2 opacity-70 text-sm">
+Maps a <strong>state</strong> to a <strong>future state</strong> via time evolution.
 </div>
 
+</div>
+
+</div>
+
+</div>
+
+<div class="flex justify-center">
+<DynamicalSystemDiagram :width="340" :height="280" />
 </div>
 
 </div>
@@ -841,3 +861,16 @@ layout: center
 <RestartOnEnter><GOLMcmBackground seedText="Thank you!" /></RestartOnEnter>
 
 #
+
+  <!-- <PlanetarySystemBackground
+    :orbits="[90, 150, 220, 300, 390, 490]"
+    :sunRadius="28"
+    :planetRadii="[5, 8, 12, 7, 15, 9]"
+    :moons="[0, 1, 1, 2, 3, 1]"
+    :moonRadius="2.5"
+    :eccentricities="[0.1, 0.1, 0.1, 0.1, 0.1, 0.1]"
+    :orbitRotations="[0, 0, 25, -15, 10, -30]"
+    :rotateX="70"
+    :rotateY="5"
+    :timeScale="0.8"
+  /> -->
