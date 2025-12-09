@@ -1,7 +1,7 @@
 [project]
-name = "differentiable-physics"
+name = "differentiable-model-calibration"
 version = "0.1.0"
-description = "Introduction to differentiable physics with JAX"
+description = "Introduction to differentiable model calibration with JAX"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
