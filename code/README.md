@@ -1,6 +1,6 @@
-# Differentiable Physics with JAX
+# Differentiable Model Calibration with JAX
 
-An introduction to differentiable physics using JAX, covering automatic differentiation, dynamical systems, and variational inference.
+An introduction to differentiable model calibration using JAX, covering automatic differentiation, dynamical systems, and variational inference.
 
 ## Notebooks
 
