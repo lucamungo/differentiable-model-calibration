@@ -9,7 +9,7 @@ fonts:
   serif: Newsreader
 ---
 
-<RestartOnEnter><LorenzBackground /></RestartOnEnter>
+<RestartOnEnter><LorenzBackground :speed="50" :trailLength="11000" /></RestartOnEnter>
 
 <div class="inline-block bg-white/10 backdrop-blur-sm border border-black/10 rounded-lg p-6">
 

@@ -1,15 +1,27 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from "vue";
 
+const props = defineProps({
+    // Trail length (number of points to keep)
+    trailLength: { type: Number, default: 10000 },
+    // Speed of dynamics (steps per frame)
+    speed: { type: Number, default: 100 },
+    // Time step for integration
+    dt: { type: Number, default: 0.001 },
+});
+
 const canvas = ref(null);
 let animationId = null;
+let ctx = null;
+
+// Use fixed dimensions matching Slidev's internal slide size
+const width = 980;
+const height = 552;
 
 // Lorenz system parameters
 const sigma = 10;
 const rho = 28;
 const beta = 8 / 3;
-const dt = 0.001;
-const stepsPerFrame = 100;
 const transparency = 0.5;
 
 // Color settings
@@ -22,8 +34,8 @@ let x = 0.1;
 let y = 0;
 let z = 0;
 
-// Reduced trail for better performance
-const maxTrailPoints = 10000;
+// Trail state
+let maxTrailPoints = 0;
 let points = null;
 let pointHead = 0;
 let pointCount = 0;
@@ -36,10 +48,17 @@ const angle = -Math.PI / 2;
 const cos = Math.cos(angle);
 const sin = Math.sin(angle);
 
+// Drawing parameters
+const scale = 18;
+const scaleX = 1.8;
+const offsetX = width / 2;
+const offsetY =  height * 1.2;
+
 function resetState() {
     x = 0.1;
     y = 0;
     z = 0;
+    maxTrailPoints = props.trailLength;
     points = new Float32Array(maxTrailPoints * 3);
     pointHead = 0;
     pointCount = 0;
@@ -55,26 +74,27 @@ function addPoint(px, py, pz) {
 }
 
 onMounted(() => {
-    const ctx = canvas.value.getContext("2d");
+    const canvasEl = canvas.value;
+    if (!canvasEl) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    canvas.value.width = width * dpr;
-    canvas.value.height = height * dpr;
-    ctx.scale(dpr, dpr);
+    // Use fixed canvas buffer size, let CSS handle display scaling
+    const pixelRatio = 2; // Use 2x for crisp rendering
+    canvasEl.width = width * pixelRatio;
+    canvasEl.height = height * pixelRatio;
 
-    const scale = 20;
-    const scaleX = 1.8;
-    const offsetX = width / 2;
-    const offsetY = height / 2 + 530;
+    ctx = canvasEl.getContext("2d");
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
     resetState();
 
+    // Initial clear
+    ctx.fillStyle = "rgba(251, 252, 255, 1)";
+    ctx.fillRect(0, 0, width, height);
+
     function lorenzStep() {
-        const dx = sigma * (y - x) * dt;
-        const dy = (x * (rho - z) - y) * dt;
-        const dz = (x * y - beta * z) * dt;
+        const dx = sigma * (y - x) * props.dt;
+        const dy = (x * (rho - z) - y) * props.dt;
+        const dz = (x * y - beta * z) * props.dt;
 
         x += dx;
         y += dy;
@@ -137,7 +157,7 @@ onMounted(() => {
     }
 
     function animate() {
-        for (let i = 0; i < stepsPerFrame; i++) {
+        for (let i = 0; i < props.speed; i++) {
             lorenzStep();
         }
         draw();
