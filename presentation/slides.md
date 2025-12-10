@@ -220,7 +220,7 @@ $\text{Trajectory: } x_T = \underbrace{\Phi \circ \dots \circ \Phi}_{T\ \text{ti
 
 - Composition of <b>differentiable time steps</b> $\Phi$
 - Parameters $\theta$ (e.g. reaction rates, couplings)
-- Can also be trained by <b>backpropagation through time</b>
+- Can also be trained by <b>backpropagation</b>?
 
 </v-clicks>
 
@@ -384,6 +384,210 @@ next_states = batch_step(current_states)
 </div>
 
 </ContentCard>
+
+</div>
+
+---
+
+# Automatic Differentiation
+
+<div grid="~ cols-2 gap-8" items-start>
+
+<div>
+
+<ContentCard color="blue" icon="i-carbon:gradient" title="What is Autodiff?">
+
+Automatic differentiation computes **exact derivatives** of programs — not symbolic, not numerical.
+
+- Tracks derivatives through **every operation**
+- Works on **arbitrary code** (loops, conditionals, recursion)
+- Two modes: **forward** and **reverse**
+
+</ContentCard>
+
+<div class="mt-4 text-center">
+
+<div class="inline-block bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+
+$\frac{\partial f}{\partial x}$ computed **exactly** via the chain rule
+
+</div>
+
+</div>
+
+</div>
+
+<div class="flex flex-col gap-4">
+
+<ContentCard color="teal" icon="i-carbon:arrow-right" title="Forward Mode" :fullHeight="false">
+
+Propagates derivatives **input → output**.
+
+Cost: $O(n)$ passes for $n$ inputs.
+
+Best for few inputs, many outputs.
+
+</ContentCard>
+
+<ContentCard color="orange" icon="i-carbon:arrow-left" title="Reverse Mode (Backprop)" :fullHeight="false">
+
+Propagates derivatives **output → input**.
+
+Cost: $O(m)$ passes for $m$ outputs.
+
+Best for many inputs, few outputs (e.g., loss functions).
+
+</ContentCard>
+
+</div>
+
+</div>
+
+---
+
+# Autodiff: Computation Graph
+
+<div grid="~ cols-2 gap-8" items-center>
+
+<div>
+
+Consider the function:
+
+<div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-center my-4">
+
+$f(x_1, x_2) = x_1 \cdot x_2 + \sin(x_1)$
+
+</div>
+
+We decompose it into **primitive operations**, each with a known derivative:
+
+| Node | Operation | Local Derivative |
+|------|-----------|------------------|
+| $v_1$ | $x_1 \cdot x_2$ | $\frac{\partial v_1}{\partial x_1} = x_2$, $\frac{\partial v_1}{\partial x_2} = x_1$ |
+| $v_2$ | $\sin(x_1)$ | $\frac{\partial v_2}{\partial x_1} = \cos(x_1)$ |
+| $f$ | $v_1 + v_2$ | $\frac{\partial f}{\partial v_1} = 1$, $\frac{\partial f}{\partial v_2} = 1$ |
+
+</div>
+
+<div>
+
+**Computation graph:**
+
+```mermaid {scale: 0.85}
+graph LR
+    x1((x₁)) --> v1["v₁ = x₁ × x₂"]
+    x2((x₂)) --> v1
+    x1 --> v2["v₂ = sin(x₁)"]
+    v1 --> f["f = v₁ + v₂"]
+    v2 --> f
+```
+
+<div class="mt-4 text-center opacity-80">
+
+Each edge carries a **local derivative** — autodiff combines them via the **chain rule**.
+
+</div>
+
+</div>
+
+</div>
+
+---
+
+# Forward Mode: Input → Output
+
+<div grid="~ cols-2 gap-5" items-start>
+
+<div>
+
+**Goal:** Compute $\frac{\partial f}{\partial x_1}$ by propagating $\dot{v} = \frac{\partial v}{\partial x_1}$ forward.
+
+<div class="mt-3 bg-teal-50 border border-teal-200 rounded-lg p-4">
+
+**Initialize:** $\dot{x}_1 = 1, \quad \dot{x}_2 = 0$
+
+**Step 1:** $v_1 = x_1 \cdot x_2$ → $\dot{v}_1 = \dot{x}_1 \cdot x_2 + x_1 \cdot \dot{x}_2 = x_2$
+
+**Step 2:** $v_2 = \sin(x_1)$ → $\dot{v}_2 = \cos(x_1) \cdot \dot{x}_1 = \cos(x_1)$
+
+**Step 3:** $f = v_1 + v_2$ → $\dot{f} = \dot{v}_1 + \dot{v}_2 = x_2 + \cos(x_1)$
+
+</div>
+
+</div>
+
+<div>
+
+<ContentCard color="teal" icon="i-carbon:checkmark-filled" title="Result">
+
+$$\frac{\partial f}{\partial x_1} = x_2 + \cos(x_1)$$
+
+</ContentCard>
+
+<div class="mt-4">
+
+<ContentCard color="blue" icon="i-carbon:information" title="Key Properties">
+
+- **One forward pass** → derivative w.r.t. **one input**
+- For $\frac{\partial f}{\partial x_2}$: re-run with $\dot{x}_1 = 0, \dot{x}_2 = 1$
+- Cost: $O(n)$ passes for $n$ inputs
+- **Best for:** few inputs, many outputs
+
+</ContentCard>
+
+</div>
+
+</div>
+
+</div>
+
+---
+
+# Reverse Mode: Output → Input
+
+<div grid="~ cols-2 gap-5" items-start>
+
+<div>
+
+**Goal:** Compute $\frac{\partial f}{\partial x_1}$ and $\frac{\partial f}{\partial x_2}$ by propagating $\bar{v} = \frac{\partial f}{\partial v}$ backward.
+
+<div class="mt-3 bg-orange-50 border border-orange-200 rounded-lg p-4">
+
+**Initialize:** $\bar{f} = 1$
+
+**Step 1:** $f = v_1 + v_2$ → $\bar{v}_1 = 1, \quad \bar{v}_2 = 1$
+
+**Step 2:** $v_2 = \sin(x_1)$ → $\bar{x}_1 \mathrel{+}= \bar{v}_2 \cdot \cos(x_1) = \cos(x_1)$
+
+**Step 3:** $v_1 = x_1 \cdot x_2$ → $\bar{x}_1 \mathrel{+}= x_2, \quad \bar{x}_2 = x_1$
+
+</div>
+
+</div>
+
+<div>
+
+<ContentCard color="orange" icon="i-carbon:checkmark-filled" title="Result">
+
+$\frac{\partial f}{\partial x_1} = x_2 + \cos(x_1), \quad \frac{\partial f}{\partial x_2} = x_1$
+
+</ContentCard>
+
+<div class="mt-4">
+
+<ContentCard color="blue" icon="i-carbon:information" title="Key Properties">
+
+- **One backward pass** → derivatives w.r.t. **all inputs**
+- Must store intermediate values (memory cost)
+- Cost: $O(m)$ passes for $m$ outputs
+- **Best for:** many inputs, few outputs
+- (This is backpropagation)
+
+</ContentCard>
+
+</div>
+
+</div>
 
 </div>
 
@@ -561,13 +765,11 @@ class: text-center
 
 <ContentCard color="blue" icon="i-carbon:chart-error-bar" title="We Need More Than a Single Best Fit">
 
-To reason scientifically we need:
+To reason scientifically we need the ability to ask *“How confident are we in these parameters?”*:
 
 - **Uncertainty estimates**
-- **Credible intervals**
+- **Confidence intervals**
 - **Posterior distributions**
-- Ability to ask:  
-  *“How confident are we in these parameters?”*
 
 </ContentCard>
 
@@ -712,15 +914,15 @@ Minimize $\operatorname{KL}(q \| p)$ — keeps the posterior close to the prior.
 
 ---
 
-# What We Get from VI
+# What We Get from Variational Inference
 
 <div grid="~ cols-2 gap-12" items-center>
 
 <ContentCard color="blue" icon="i-carbon:analytics" title="Posterior Insights">
 
-- Means and variances of each parameter  
-- Joint correlations  
-- Posterior samples  
+- Statistical distribution for each parameter
+- Joint correlations*
+- Posterior samples
 - Predictive distributions  
 
 </ContentCard>
@@ -728,9 +930,8 @@ Minimize $\operatorname{KL}(q \| p)$ — keeps the posterior close to the prior.
 <ContentCard color="teal" icon="i-carbon:chart-multitype" title="Uncertainty in Dynamics">
 
 - Uncertainty bands on trajectories  
-- Robust estimates under noisy data  
-- Sensitivity analysis  
-- Full probabilistic calibration  
+- Robust estimates under noisy data    
+- Full "probabilistic" calibration  
 
 </ContentCard>
 
@@ -852,6 +1053,30 @@ class: text-center
 
 <div class="h-[420px] w-full overflow-hidden bg-white rounded-xl border border-black/10">
 <AutoReloadIframe src="/figures/numpyro_svi_animation.html" class="w-full h-full" />
+</div>
+
+---
+
+# Vita brevis, ars longa
+
+<div grid="~ cols-2 gap-x-6 gap-y-3" class="max-w-4xl mx-auto">
+
+<div class="bg-white rounded-xl border border-black/10 p-3 shadow-sm">
+<img src="/Physics-informed_nerural_networks.png" class="w-full rounded-lg" />
+</div>
+
+<div class="bg-white rounded-xl border border-black/10 p-3 shadow-sm">
+<img src="/differentiable-programming-eurips.png" class="w-full rounded-lg" />
+</div>
+
+<div class="bg-white rounded-xl border border-black/10 p-3 shadow-sm">
+<img src="/gvi.png" class="w-full rounded-lg" />
+</div>
+
+<div class="bg-white rounded-xl border border-black/10 p-3 shadow-sm">
+<img src="/diffabm.png" class="w-full rounded-lg" />
+</div>
+
 </div>
 
 ---
