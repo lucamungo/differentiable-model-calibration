@@ -23,42 +23,6 @@ Backpropagating Through Dynamical Systems with JAX & NumPyro
 
 ---
 
-# Introduction
-
-<div grid="~ cols-2 gap-10" items-start>
-
-<ContentCard color="blue" icon="i-carbon:user-avatar" title="Luca Mungo">
-
-- **Researcher** at Macrocosm
-- Trained as a **Physicist** (Complex Systems)
-- **PhD** at Oxford — Network Theory in Economics
-- Current focus: **Agent-Based Models** and their **Calibration**
-
-</ContentCard>
-
-<ContentCard color="teal">
-
-<img src="/MACROCOSM_NAME_BLCK.png" class="h-6 mb-4" />
-
-Novel economic models leveraging advancements in **data** and **computing**. The company's motto is "A better economics for a better world".
-
-<div class="mt-5 flex items-center gap-5">
-<img src="/making-sense-of-chaos.jpg" class="h-32 rounded shadow" />
-<div class="text-sm opacity-80">
-... and this book gives an overview of the company's work.
-</div>
-</div>
-
-</ContentCard>
-
-</div>
-
-<div class="mt-8 flex items-center justify-center gap-2 text-base opacity-60">
-<div class="i-carbon:link text-blue-500"></div>
-<a href="https://lmungo.xyz" class="text-blue-500 hover:underline">lmungo.xyz</a>
-</div>
----
-
 # Outline
 
 <RestartOnEnter><SpirographBackground /></RestartOnEnter>
