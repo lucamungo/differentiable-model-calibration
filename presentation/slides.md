@@ -21,6 +21,8 @@ Backpropagating Through Dynamical Systems with JAX & NumPyro
 
 </div>
 
+<a href="https://lmungo.xyz" target="_blank" class="absolute bottom-[5%] right-[5%] text-sm !no-underline" style="color: hsl(0, 0.40%, 47.60%) !important">lmungo.xyz</a>
+
 ---
 
 # Outline
